@@ -1,0 +1,475 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+	<style>
+	.BPlay, .BStop {
+	cursor:pointer;
+	border:solid 2px gray;
+	margin: 3px;
+	padding: 3px;
+	background-color: ivory;
+	}
+	</style>
+    </head>
+    <body >
+		
+        <div id="ClockDom">
+		<span class="BPlay">start</span><span  class="BStop">stop</span>
+		
+		<div id="mainClockDom"></div>
+		
+		</div>
+		<br style="clear:both;">
+		<div id="ClockSVG">
+		<span class="BPlay">start</span><span  class="BStop">stop</span>
+		
+		<svg id="mainClockSVG"  xmlns="http://www.w3.org/2000/svg">
+		
+		</div>
+		<br style="clear:both;">
+		<div id="ClockCanvas">
+		<span class="BPlay">start</span><span  class="BStop">stop</span>
+		
+		<canvas id='mainClockCanvas'></canvas>
+		
+		</div>
+		
+        <script>		
+		 // model
+
+    function ClockModel()
+    {
+		var self=this;
+		var Timer=null;
+		 h=0;
+		 m=0;
+		 s=0;
+		var curentTime=null;
+        var MyView = null;
+		
+        this.Start=function(View)
+        {
+            MyView=View;
+        }
+
+        this.UpdateView=function()
+        {
+            // при любых изменениях модели попадаем сюда
+            // представление может быть любым,
+            // лишь бы имело метод Update()
+            if ( MyView )
+                MyView.Update();
+        };
+
+		this.StartClock=function()
+        {
+			curentTime=new Date();
+			h=curentTime.getHours();
+			m=curentTime.getMinutes();
+			s=curentTime.getSeconds();
+			m=checkZeroTime(m);
+			s=checkZeroTime(s);
+			function checkZeroTime(i)
+			{
+				if (i<10)
+				{
+					i="0" + i;
+				}
+				return i;
+			}
+            self.UpdateView(); // модель при любых изменениях
+            // вызывает обновление представления
+        };
+		this.OnbuttonStart =function() {
+			if (Timer==null){
+				Timer=setInterval(this.StartClock, 500);
+				}
+			}
+		this.OnbuttonStop =function() {
+			clearInterval(Timer);
+			Timer=null;
+		}
+    };
+
+    // view
+	function ClockWiewSVG()
+    {
+		var MyModel = null; // с какой моделью работаем
+        var MyField = null; // внутри какого элемента DOM наша вёрстка
+		var RoundClock=null;
+		var backCircle=null;
+		var numberClock=null;
+		var secSpire=null;
+		var minSpire=null;
+		var hourSpire=null;
+		
+		this.Start=function(Model,Field)
+        {
+			MyModel=Model;
+			MyField=Field;
+			var setClock={
+			width: 400,
+			NumberW: 20
+			};
+			var posSet={
+			left: "",
+			top: "",
+			float: "left",
+			position: "relative"
+			};
+
+			var RoundClock=document.getElementById('mainClockSVG');
+			RoundClock.setAttribute("width", setClock.width);
+			RoundClock.setAttribute("height", setClock.width);
+			RoundClock.style.top=posSet.top+"px";
+			RoundClock.style.margin=(setClock.width*0.05)+"px";
+			RoundClock.style.left=posSet.left+"px";
+			RoundClock.style.float=posSet.float;
+			RoundClock.innerHTML+=("<ellipse cx="+setClock.width/2+" cy="+setClock.width/2+" rx="+setClock.width/2+" ry="+setClock.width/2+" fill=gray />");
+			for (i=360/12; i<=360; i+=360/12){
+			var Angle=i/180*Math.PI;
+			var Radius=setClock.width/2-setClock.NumberW;
+			var NumberCenterX=setClock.width/2+Radius*Math.sin(Angle);
+			var NumberCenterY=setClock.width/2-Radius*Math.cos(Angle);
+			RoundClock.innerHTML+=("<ellipse cx="+NumberCenterX+" cy="+NumberCenterY+" rx="+(setClock.NumberW)+" ry="+(setClock.NumberW)+" fill=deepskyblue />");
+			RoundClock.innerHTML+=("<text x="+(NumberCenterX-setClock.NumberW+(setClock.NumberW/2))+" y="+(NumberCenterY+(setClock.NumberW/2))+" textLength="+(setClock.NumberW)+"  font-size="+(setClock.NumberW*1.5)+">"+i/30+"</text>" );
+			}
+			var mHeight=setClock.width/2/5*4;
+			var hHeight=setClock.width/2/5*3;
+			var MHwidth=setClock.width/40;
+			//позиция стрелок со смещение на 5% ниже свой длинны для трансформ 95%
+			var mTop=setClock.width/2-mHeight+mHeight*0.05;
+			var hTop=setClock.width/2-hHeight+hHeight*0.05;
+			var RadiusSpire=setClock.width/80;
+			RoundClock.innerHTML+=("<rect x="+(setClock.width/2-MHwidth/2)+"  y="+mTop+" rx="+RadiusSpire+" ry="+RadiusSpire+" stroke=lime fill=green width="+MHwidth+" height="+mHeight+" id='minSpireSVG' style='transform-origin: 50% 50% ;;' />" );
+			RoundClock.innerHTML+=("<rect x="+(setClock.width/2-MHwidth/2)+"  y="+hTop+" rx="+RadiusSpire+" ry="+RadiusSpire+" stroke=lime fill=green width="+MHwidth+" height="+hHeight+" id='hourSpireSVG' style='transform-origin: 50% 50%;' />" );
+			RoundClock.innerHTML+=("<line x1="+(setClock.width/2)+" x2="+(setClock.width/2)+" y1="+(setClock.width/2)+" y2=0 stroke=lime stroke-width=1 id='secSpireSVG' style='transform-origin: 50% 50%;' />" );
+			RoundClock.innerHTML+=("<text x="+(setClock.width/4)+" y="+(setClock.width/4)+" textLength="+(setClock.width/2)+" font-size="+(setClock.NumberW*1.5)+" id='numberClockSVG'></text>" );
+			
+		}
+		this.Update=function()
+		{
+			//spire position
+			numberClockSVG.innerHTML=h+":"+m+":"+s;
+			secSpireSVG.style.transform = 'rotate('+s*6+'deg)';
+			minSpireSVG.style.transform = 'rotate('+m*6+'deg)';
+			hourSpireSVG.style.transform ='rotate('+(h*30+m*0.5)+'deg)';
+		}
+	}
+    function ClockWiewDom()
+    {
+        var MyModel = null; // с какой моделью работаем
+        var MyField = null; // внутри какого элемента DOM наша вёрстка
+		var setBackCircle={
+			width: 400,
+			height: 400,
+			radius: 200,
+			background: 'gray'
+		};
+		var setNumber={
+			width: setBackCircle.width/13,
+			height: setBackCircle.width/13,
+			radius: 50, //%
+			background: 'deepskyblue'
+		};
+		 var posSet={
+			left: "",
+			top: "",
+			float: "left",
+			position: "relative",
+		};
+		var RoundClock=null;
+		var backCircle=null;
+		var numberClock=null;
+		var secSpire=null;
+		var minSpire=null;
+		var hourSpire=null;
+        this.Start=function(Model,Field)
+        {
+            MyModel=Model;
+            MyField=Field;
+		
+            // ищем и запоминаем интересные нам элементы DOM
+			//spire find
+			RoundClock=document.getElementById('mainClockDom');
+			RoundClock.style.width=setBackCircle.width+"px";
+			RoundClock.style.top=posSet.top+"px";
+			RoundClock.style.margin=(setBackCircle.width*0.05)+"px";
+			RoundClock.style.left=posSet.left+"px";
+			RoundClock.style.float=posSet.float;
+			RoundClock.style.position=posSet.position;
+			RoundClock.style.pointerEvents="absolute";
+			backCircle= document.createElement('div');
+			backCircle.style.cssText="background-image: url('1.jpg'); background-position: center; background-size: 100%";
+			backCircle.style.width=setBackCircle.width+"px";
+			backCircle.style.height=setBackCircle.height+"px";
+			backCircle.style.borderRadius=setBackCircle.radius+"px";
+			backCircle.style.backgroundColor=setBackCircle.background;
+			backCircle.style.position="relative";
+			RoundClock.appendChild(backCircle);
+			//цифровые часы
+			numberClock=document.createElement("div");
+			numberClock.style.cssText="background-color: black; color: lime;";
+			var numberClockWidth = setBackCircle.width/3;
+			var numberClockTop=setBackCircle.height/5;
+			numberClock.style.width=numberClockWidth+"px";
+			numberClock.style.position="absolute";
+			numberClock.style.left=numberClockWidth+"px";
+			numberClock.style.top=numberClockTop+"px";
+			numberClock.style.border="solid black 1px";
+			numberClock.style.textAlign="center";
+			numberClock.style.fontSize=setNumber.height+"px";
+			RoundClock.appendChild(numberClock);
+			//построение цифырпрк по кругу
+			var backCircleCenterX=backCircle.offsetWidth/2;//backCircle.offsetLeft+backCircle.offsetWidth/2;
+			var backCircleCenterY=backCircle.offsetWidth/2;//backCircle.offsetLeft+backCircle.offsetWidth/2;
+			var Radius=setBackCircle.width/2-setNumber.width ;
+			for (i=360/12; i<=360; i+=360/12){
+				var Number=document.createElement("div");
+				Number.style.width=setNumber.width+"px";
+				Number.style.height=setNumber.height+"px";
+				Number.style.borderRadius=setNumber.radius+"%";
+				Number.style.backgroundColor=setNumber.background;
+				Number.style.position="absolute";
+				var Angle=i/180*Math.PI;
+				var NumberCenterX=backCircleCenterX+Radius*Math.sin(Angle);
+				var NumberCenterY=backCircleCenterY-Radius*Math.cos(Angle);
+				Number.style.left=Math.round(NumberCenterX-setNumber.width/2)+'px';
+				Number.style.top=Math.round(NumberCenterY-setNumber.height/2)+'px';
+				Number.innerText=i/(360/12);
+				Number.style.textAlign="center";
+				Number.style.fontSize=setNumber.height+"px";
+				RoundClock.appendChild(Number);
+			}
+			//секундная стрелка
+			secSpire = document.createElement("div");
+			secSpire.style.cssText= "box-shadow: 2px 2px 3px 0px rgba(0,0,0,0.75); width: 1px; background-color: lime; position: absolute; z-index:3";
+			secSpire.style.top="0px";
+			secSpire.style.transformOrigin='50% 100%';
+			secSpire.style.left=setBackCircle.height/2+"px";
+			secSpire.style.height=setBackCircle.height/2+"px";
+			RoundClock.appendChild(secSpire);
+			//минуктная стрелка
+			minSpire= document.createElement('div');
+			minSpire.style.cssText= "opacity:0.85; box-shadow: 2px 2px 3px 0px rgba(0,0,0,0.75); background-color: deepskyblue; border transform-origin: 50% 100%; position: absolute; z-index:2; border-top-left-radius:50%; border-top-right-radius:50%;";
+			minSpire.style.top=setBackCircle.height/10+"px";
+			minSpire.style.transformOrigin='50% 100%';
+			minSpire.style.left=setBackCircle.height/2+"px";
+			minSpire.style.height=setBackCircle.height/10*4+"px";
+			minSpire.style.width=setBackCircle.height/50+"px";
+			minSpire.style.left=setBackCircle.height/2-setBackCircle.height/50/2+"px";
+			RoundClock.appendChild(minSpire);
+			//часовая стрелка
+			hourSpire=document.createElement('div');
+			hourSpire.style.cssText= "opacity:0.85; box-shadow: 2px 2px 3px 0px rgba(0,0,0,0.75); background-color: deepskyblue; border transform-origin: 50% 100%; position: absolute; z-index:1; border-top-left-radius:50%; border-top-right-radius:50%;";
+			hourSpire.style.transformOrigin='50% 100%';
+			hourSpire.style.left=setBackCircle.width/2+"px";
+			var hourSpireHeight=setBackCircle.height/2/5*3;
+			var hourSpireTop=setBackCircle.height/2/5*2;
+			hourSpire.style.top=hourSpireTop+"px";
+			hourSpire.style.height=hourSpireHeight+"px";
+			var hourSpireWidth=setBackCircle.width/50;
+			hourSpire.style.width=hourSpireWidth+"px";
+			hourSpire.style.left=setBackCircle.height/2-hourSpireWidth/2+"px";
+			RoundClock.appendChild(hourSpire);
+			
+        }
+
+        this.Update=function()
+        {
+			//spire position
+			numberClock.innerHTML=h+":"+m+":"+s;
+			secSpire.style.transform = 'rotate('+s*6+'deg)';
+			minSpire.style.transform = 'rotate('+m*6+'deg)';
+			hourSpire.style.transform ='rotate('+(h*30+m*0.5)+'deg)';
+        }
+    };
+	
+	///canvsc view
+	function ClockWiewCanvas()
+    {
+        var MyModel = null; // с какой моделью работаем
+        var MyField = null; // внутри какого элемента DOM наша вёрстка
+		var setClock={
+            width: 400,
+            NumberW: 20
+        }
+        var posSet={
+            left: "",
+            top: "",
+            float: "left",
+            position: "relative"
+        };
+
+
+        this.Start=function(Model,Field)
+        {
+            MyModel=Model;
+            MyField=Field;
+			
+			
+			
+            // ищем и запоминаем интересные нам элементы DOM
+	
+			
+        }
+
+        this.Update=function()
+        {
+			//spire position
+			var RoundClock=document.getElementById('mainClockCanvas');
+			var Context=RoundClock.getContext('2d');
+			RoundClock.setAttribute("width", setClock.width);
+			RoundClock.setAttribute("height", setClock.width);
+			RoundClock.style.top=posSet.top+"px";
+			RoundClock.style.margin=(setClock.width*0.05)+"px";
+			RoundClock.style.left=posSet.left+"px";
+			RoundClock.style.float=posSet.float;
+             Context.beginPath();
+             Context.fillStyle='lightgray';
+             Context.ellipse(setClock.width/2, setClock.width/2, setClock.width/2, setClock.width/2, Math.PI/4, 0, Math.PI*2, false);
+             Context.fill();
+             for (i=360/12; i<=360; i+=360/12){
+                 var Angle=i/180*Math.PI;
+                 var Radius=setClock.width/2-setClock.NumberW;
+                 var NumberCenterX=setClock.width/2+Radius*Math.sin(Angle);
+                 var NumberCenterY=setClock.width/2-Radius*Math.cos(Angle);
+                 Context.fillStyle='lightblue';
+                 Context.beginPath();
+                 Context.ellipse(NumberCenterX, NumberCenterY, setClock.NumberW, setClock.NumberW, Math.PI/4, 0, Math.PI*2, false);
+                 Context.fill();
+                 Context.beginPath();
+                 Context.fillStyle='black';
+                 Context.font=setClock.NumberW+"px Arial";
+                 Context.textAlign="center";
+                 Context.textBaseline="middle";
+                 Context.fillText(i/30, NumberCenterX, NumberCenterY);
+             }
+             var MHwidth=setClock.width/40;
+             var mHeight=setClock.width/2/5*4;
+             var hHeight=setClock.width/2/5*3;
+             
+             //hour arrow
+             Context.resetTransform();
+             Context.beginPath();
+             Context.lineWidth=MHwidth;
+             Context.lineCap='round';
+             Context.translate(setClock.width/2, setClock.width/2);
+             Context.rotate((h*30+m*0.5)/180*Math.PI);
+             Context.strokeStyle='orange';
+             Context.moveTo(0,0);
+             Context.lineTo(0,-hHeight);
+             Context.stroke();
+             //min arrow
+             Context.resetTransform();
+             Context.beginPath();
+             Context.lineWidth=MHwidth;
+             Context.lineCap='round';
+             Context.translate(setClock.width/2, setClock.width/2);
+             Context.rotate(m*6/180*Math.PI);
+             Context.strokeStyle='green';
+             Context.moveTo(0,0);
+             Context.lineTo(0,-mHeight);
+             Context.stroke();
+             //Sec arrow
+             Context.resetTransform();
+             Context.lineWidth=1;
+             Context.beginPath();
+             Context.translate(setClock.width/2, setClock.width/2);
+             Context.rotate(s*6/180*Math.PI);
+             Context.strokeStyle='red';
+             Context.moveTo(0,0);
+             Context.lineTo(0,-setClock.width/2);
+             Context.stroke();
+             //number clock
+             Context.resetTransform();
+             //Context.beginPath();
+             Context.fillStyle='green';
+             Context.font=setClock.NumberW+"px Arial";
+             Context.fillText(h+":"+m+":"+s, setClock.width/2 ,setClock.width/4 );
+
+        }
+    };
+
+    // controller
+
+    function ClockController()
+    {
+        var MyModel = null; // с какой моделью работаем
+        var MyField = null; // внутри какого элемента DOM наша вёрстка
+        var OnOff = true; 
+
+        this.Start=function(Model,Field)
+        {
+            MyModel=Model;
+            MyField=Field;
+
+            // ищем и запоминаем интересные нам элементы DOM
+            // назначаем обработчики событий
+
+            var ButtonStop=MyField.querySelector('.BStop');
+            ButtonStop.addEventListener('click',this.ClockStop);
+            var ButtonPlay=MyField.querySelector('.BPlay');
+            ButtonPlay.addEventListener('click',this.ClockPlay);
+            
+        }
+
+        this.ClockStop=function()
+        {
+            MyModel.OnbuttonStop(); // контроллер вызывает только методы модели
+        }
+
+        this.ClockPlay=function()
+        {
+            MyModel.OnbuttonStart(); // контроллер вызывает только методы модели
+        }
+
+    }
+
+</script>
+
+
+
+<script>
+
+    // настройка, инициализация
+
+    // создаём все три компонента
+    var Model=new ClockModel();
+    var View=new ClockWiewDom();
+    var Controller=new ClockController();
+	var Model2=new ClockModel();
+    var View2=new ClockWiewSVG();
+    var Controller2=new ClockController();
+	var Model3=new ClockModel();
+    var View3=new ClockWiewCanvas();
+    var Controller3=new ClockController();
+
+    // увязываем компоненты друг с другом
+    // указываем компонентам, в каком DOM им работать
+    var ContainerElem=document.getElementById('ClockDom');
+    Model.Start(View);
+    View.Start(Model,ContainerElem);
+    Controller.Start(Model,ContainerElem);
+    var ContainerElem2=document.getElementById('ClockSVG');
+    Model2.Start(View2);
+    View2.Start(Model2,ContainerElem2);
+    Controller2.Start(Model2,ContainerElem2);
+	var ContainerElem3=document.getElementById('ClockCanvas');
+    Model3.Start(View3);
+    View3.Start(Model3,ContainerElem3);
+    Controller3.Start(Model3,ContainerElem3);
+    // инициируем первичное отображение Model во View
+    Model.UpdateView();
+	Model2.UpdateView();
+	Model3.UpdateView();
+	//запуск без кнопки
+	Controller.ClockPlay()
+	Controller2.ClockPlay()
+	Controller3.ClockPlay()
+        </script>
+    </body>
+</html>
