@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PingPong</title>
+</head>
+<body>
+<div style="text-align: center; width:700px; margin: 0 auto">
+    <input type='button' value='Подача синего' onclick='StartL()'>
+
+    <span id="scoreL"></span>:<span id="scoreR"></span> <span id="looser"></span>
+
+    <input type='button' value='Подача красного' onclick='StartR()'>
+    <canvas id='AreaPin'></canvas>
+    <p>
+        Движение синего: Lshift Lсtrl, Красного: стрелки вверх и вниз
+    </p>
+</div>
+<script>
+    var PinPong=document.getElementById('AreaPin');
+    var Context=PinPong.getContext('2d');
+    var scoreLeft=0;
+    var scoreRight=0;
+    document.getElementById("scoreL").innerText=scoreLeft;
+    document.getElementById("scoreR").innerText=scoreRight;
+    document.getElementById("looser").innerText="Ничья";
+    var AreaH=
+    {
+        Width : 700,
+        Height : 400
+    };
+    AreaPin.setAttribute("width", AreaH.Width);
+    AreaPin.setAttribute("height", AreaH.Height);
+    var BallH=
+    {
+        PosX : AreaH.Width/2,
+        PosY : AreaH.Height/2,
+        SpeedX : 0,
+        SpeedY : 5,
+        Width : 10,
+        Height: 10
+    };
+    var leftStickH=
+    {
+        Height: 100,
+        Width: 10,
+        PosY: AreaH.Height/2,
+        PosX: 50,
+        SpeedY: 0
+    };
+    var rightStickH=
+    {
+        Height: 100,
+        Width: 10,
+        PosY: AreaH.Height/2,
+        PosX: AreaH.Width-50,
+        SpeedY: 0
+    };
+    function paint(){
+        Context.beginPath();
+        Context.fillStyle='Black';
+        Context.fillRect(0,0,AreaPin.width,AreaPin.height);
+        Context.beginPath();
+        Context.fillStyle='yellow';
+        Context.fillRect(BallH.PosX,BallH.PosY,BallH.Width,BallH.Height);
+        Context.stroke();
+        Context.beginPath();
+        Context.fillStyle='blue';
+        Context.fillRect(leftStickH.PosX,leftStickH.PosY,leftStickH.Width,leftStickH.Height);
+        Context.beginPath();
+        Context.fillStyle='red';
+        Context.fillRect(rightStickH.PosX,rightStickH.PosY,rightStickH.Width,rightStickH.Height);
+    }
+    var intervalStart = setInterval(function(){ Tick() }, 40); //нейтральный запуск
+    var interval;
+    function StartL() //подача левого
+    {
+        BallH.SpeedX=10;
+        interval = setInterval(function(){ Tick() }, 40);
+    }
+    function StartR() //подача правого
+    {
+        BallH.SpeedX=-10;
+        interval = setInterval(function(){ Tick() }, 40);
+    }
+    function Tick()
+    {
+       // leftStickH.PosY+=leftStickH.SpeedY;
+        // вылетел ли мяч правее стены?
+        if ( BallH.PosX+BallH.Width>AreaH.Width )
+        {
+            {
+                scoreLeft++;
+                document.getElementById("scoreL").innerText=scoreLeft;
+                BallH.SpeedX=0;
+                BallH.PosX=AreaH.Width/2;
+                BallH.PosY=AreaH.Height/2;
+                clearInterval(interval);
+                clearInterval(intervalStart);
+                intervalStart = setInterval(function(){ Tick() }, 40);
+            }
+        }
+        //отскок левой палки
+        if ( BallH.PosX==leftStickH.PosX&&BallH.PosY>leftStickH.PosY-BallH.Height&&BallH.PosY<leftStickH.PosY+100)
+        {
+            BallH.SpeedX=-BallH.SpeedX;
+            BallH.PosX=leftStickH.PosX;
+        }
+        //отскок правой  палки
+        if ( BallH.PosX==rightStickH.PosX&&BallH.PosY>rightStickH.PosY-BallH.Height&&BallH.PosY<rightStickH.PosY+100)
+        {
+            BallH.SpeedX=-BallH.SpeedX;
+            BallH.PosX=rightStickH.PosX;
+        }
+
+        if ( BallH.PosX<0 ) // вылетел ли мяч левее стены
+        {
+            scoreRight++;
+            document.getElementById("scoreR").innerText=scoreRight;
+            BallH.SpeedX=0;
+            BallH.PosX=AreaH.Width/2;
+            BallH.PosY=AreaH.Height/2;
+            clearInterval(interval);
+            clearInterval(intervalStart);
+            intervalStart = setInterval(function(){ Tick() }, 40);
+        }
+
+        BallH.PosY+=BallH.SpeedY; //пускаем шарик ввер-вниз на подачу
+        // вылетел ли мяч ниже пола?
+        if ( BallH.PosY+BallH.Height>AreaH.Height )
+        {
+            BallH.SpeedY=-BallH.SpeedY;
+            BallH.PosY=AreaH.Height-BallH.Height;
+        }
+        // вылетел ли мяч выше потолка?
+        if ( BallH.PosY<0 )
+        {
+            BallH.SpeedY=-BallH.SpeedY;
+            BallH.PosY=0;
+        }
+        //инфа на табло
+        if (scoreLeft==scoreRight){
+            document.getElementById("looser").innerText="Ничья";
+        }
+        if (scoreLeft>scoreRight){
+            document.getElementById("looser").innerText="Красный Лузер";
+        }
+        if (scoreLeft<scoreRight){
+            document.getElementById("looser").innerText="Синий Нуб";
+        }
+        paint ();
+        BallH.PosX+=BallH.SpeedX;
+        leftStickH.PosY+=leftStickH.SpeedY;
+        rightStickH.PosY+=rightStickH.SpeedY;
+        if (leftStickH.PosY <=0||leftStickH.PosY>=AreaH.Height-leftStickH.Height){
+            leftStickH.SpeedY=0;
+        }
+        if (rightStickH.PosY <=0||rightStickH.PosY>=AreaH.Height-rightStickH.Height){
+            rightStickH.SpeedY=0;
+        }
+    }
+    //управелние левой палки
+    //UP
+        addEventListener("keydown", function (event) {
+            event.preventDefault();
+            if (event.keyCode == 16)
+                if (leftStickH.PosY >0){
+                    leftStickH.SpeedY=-10;
+                }
+        });
+    addEventListener("keyup", function(event) {
+        event.preventDefault();
+        if (event.keyCode == 16)
+            leftStickH.SpeedY=0;
+    });
+    //Downn
+    addEventListener("keydown", function(event) {
+        event.preventDefault();
+        if (event.keyCode == 17)
+            if (leftStickH.PosY <AreaH.Height-leftStickH.Height){
+                leftStickH.SpeedY=10;
+            }
+    });
+    addEventListener("keyup", function(event) {
+        if (event.keyCode == 17)
+            leftStickH.SpeedY=0;
+    });
+    //управелние правой палки
+    //UP
+    addEventListener("keydown", function (event) {
+        event.preventDefault();
+        if (event.keyCode == 38)
+            if (rightStickH.PosY >0){
+                rightStickH.SpeedY=-10;
+            }
+    });
+    addEventListener("keyup", function(event) {
+        event.preventDefault();
+        if (event.keyCode == 38)
+            rightStickH.SpeedY=0;
+    });
+    //Downn
+    addEventListener("keydown", function(event) {
+        event.preventDefault();
+        if (event.keyCode == 40)
+            if (rightStickH.PosY <AreaH.Height-rightStickH.Height){
+                rightStickH.SpeedY=10;
+            }
+    });
+    addEventListener("keyup", function(event) {
+        if (event.keyCode == 40)
+            rightStickH.SpeedY=0;
+    });
+
+</script>
+</body>
+</html>
